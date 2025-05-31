@@ -1,0 +1,21 @@
+CREATE TABLE IF NOT EXISTS categories (
+    id CHAR(36) PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
+    image MEDIUMTEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS products (
+    id CHAR(36) PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    slug VARCHAR(255) NOT NULL UNIQUE,
+    image MEDIUMTEXT,
+    category_id CHAR(36) NOT NULL,
+    details TEXT,
+    images JSON,
+    isFeatured BOOLEAN NOT NULL DEFAULT 0,
+    isDeleted BOOLEAN NOT NULL DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE
+);

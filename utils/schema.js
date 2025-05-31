@@ -4,12 +4,16 @@ const pool = require("../config/db");
 async function fetchData(table, filter = {}) {
   let sql = `SELECT * FROM \`${table}\``;
   let values = [];
+  // Always exclude deleted rows if isDeleted column exists
+  let whereClauses = [];
   if (filter && Object.keys(filter).length > 0) {
-    const where = Object.keys(filter)
-      .map((key) => `\`${key}\` = ?`)
-      .join(" AND ");
-    sql += ` WHERE ${where}`;
+    whereClauses = Object.keys(filter).map((key) => `\`${key}\` = ?`);
     values = Object.values(filter);
+  }
+  // Add isDeleted check
+  whereClauses.push('(`isDeleted` IS NULL OR `isDeleted` = 0)');
+  if (whereClauses.length > 0) {
+    sql += ` WHERE ${whereClauses.join(' AND ')}`;
   }
   const [rows] = await pool.query(sql, values);
   return rows;
@@ -19,15 +23,18 @@ async function fetchData(table, filter = {}) {
 async function fetchOne(table, filter) {
   let sql = `SELECT * FROM \`${table}\``;
   let values = [];
+  let whereClauses = [];
   if (typeof filter === "object" && filter !== null) {
-    const where = Object.keys(filter)
-      .map((key) => `\`${key}\` = ?`)
-      .join(" AND ");
-    sql += ` WHERE ${where}`;
+    whereClauses = Object.keys(filter).map((key) => `\`${key}\` = ?`);
     values = Object.values(filter);
   } else {
-    sql += " WHERE id = ?";
+    whereClauses = ["id = ?"];
     values = [filter];
+  }
+  // Add isDeleted check
+  whereClauses.push('(`isDeleted` IS NULL OR `isDeleted` = 0)');
+  if (whereClauses.length > 0) {
+    sql += ` WHERE ${whereClauses.join(' AND ')}`;
   }
   const [rows] = await pool.query(sql, values);
   return rows[0] || null;
@@ -57,19 +64,20 @@ async function update(table, filter, data) {
   return result.affectedRows > 0;
 }
 
-// Delete a row by id
+// Cold delete: set isDeleted = 1 instead of deleting the row
 async function deleteItem(table, id) {
-  const [result] = await pool.query(`DELETE FROM \`${table}\` WHERE id = ?`, [
-    id,
-  ]);
+  const [result] = await pool.query(
+    `UPDATE \`${table}\` SET isDeleted = 1 WHERE id = ?`,
+    [id]
+  );
   return result.affectedRows > 0;
 }
 
-// Delete multiple rows by ids (array)
+// Cold delete for multiple items
 async function deleteMultipleItems(table, ids) {
   if (!Array.isArray(ids) || ids.length === 0) return false;
   const [result] = await pool.query(
-    `DELETE FROM \`${table}\` WHERE id IN (?)`,
+    `UPDATE \`${table}\` SET isDeleted = 1 WHERE id IN (?)`,
     [ids],
   );
   return result.affectedRows > 0;

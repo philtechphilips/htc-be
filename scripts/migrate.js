@@ -22,12 +22,16 @@ async function runMigration() {
     }
     for (const file of sqlFiles) {
       const sql = fs.readFileSync(file, "utf8");
-      try {
-        await pool.query(sql);
-        console.log(`Migration completed for: ${path.basename(file)}`);
-      } catch (err) {
-        console.error(`Migration failed for ${path.basename(file)}:`, err.message);
+      // Split on semicolon followed by optional whitespace and a newline (to support multiple statements)
+      const statements = sql.split(/;\s*\n/).map(s => s.trim()).filter(Boolean);
+      for (const statement of statements) {
+        try {
+          await pool.query(statement);
+        } catch (err) {
+          console.error(`Migration failed for ${path.basename(file)}:`, err.message);
+        }
       }
+      console.log(`Migration completed for: ${path.basename(file)}`);
     }
     // Example: Add ALTER TABLE logic for new columns (customize as needed)
     // await pool.query("ALTER TABLE users ADD COLUMN ...");

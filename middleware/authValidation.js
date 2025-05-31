@@ -29,9 +29,38 @@ const forgotPasswordSchema = Joi.object({
   email: Joi.string().email().required(),
 });
 
+const categorySchema = Joi.object({
+  name: Joi.string().min(2).max(100).required(),
+  description: Joi.string().allow("").required(),
+  image: Joi.string().required(),
+});
+
+const productSchema = Joi.object({
+  name: Joi.string().min(2).max(255).required(),
+  slug: Joi.string().min(2).max(255).required(),
+  image: Joi.string().required(),
+  category_id: Joi.string().required(),
+  details: Joi.string().allow("").required(),
+  images: Joi.array().items(Joi.string()).required(),
+  isFeatured: Joi.boolean().optional(),
+});
+
+const updateProductSchema = Joi.object({
+  name: Joi.string().min(2).max(255),
+  slug: Joi.string().min(2).max(255),
+  image: Joi.string(),
+  category_id: Joi.string(),
+  details: Joi.string().allow(""),
+  images: Joi.array().items(Joi.string()),
+  isFeatured: Joi.boolean(),
+});
+
 module.exports = {
   validate,
   registerSchema,
   loginSchema,
   forgotPasswordSchema,
+  categorySchema,
+  productSchema,
+  updateProductSchema,
 };
