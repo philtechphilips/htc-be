@@ -1,4 +1,3 @@
-const pool = require("../config/db");
 const { v4: uuidv4 } = require("uuid");
 const schema = require("../utils/schema");
 const { errorResponse, successResponse } = require("../utils/helpers/response");
@@ -7,10 +6,7 @@ exports.addCategory = async (req, res) => {
   const { name, description, image } = req.body;
   try {
     const id = uuidv4();
-    await pool.query(
-      "INSERT INTO categories (id, name, description, image) VALUES (?, ?, ?, ?)",
-      [id, name, description, image]
-    );
+    await schema.create("categories", { id, name, description, image });
     return successResponse(res, {
       statusCode: 201,
       message: "Category created",
@@ -23,14 +19,12 @@ exports.addCategory = async (req, res) => {
 
 exports.getCategories = async (req, res) => {
   try {
-    const [categories] = await pool.query("SELECT * FROM categories");
+    const categories = await schema.fetchData("categories");
     // For each category, count products
     for (const cat of categories) {
-      const [rows] = await pool.query(
-        "SELECT COUNT(*) as productCount FROM products WHERE category_id = ?",
-        [cat.id]
-      );
-      cat.productCount = rows[0].productCount;
+      // Use schema.fetchData for product count
+      const products = await schema.fetchData("products", { category_id: cat.id });
+      cat.productCount = products.length;
     }
     return successResponse(res, {
       statusCode: 200,
@@ -46,8 +40,8 @@ exports.addProduct = async (req, res) => {
   let { name, image, category_id, details, images } = req.body;
   try {
     // Check category exists
-    const [catRows] = await pool.query("SELECT id FROM categories WHERE id = ?", [category_id]);
-    if (catRows.length === 0) {
+    const category = await schema.fetchOne("categories", { id: category_id });
+    if (!category) {
       return errorResponse(res, { statusCode: 400, message: "Category not found" });
     }
     // Auto-generate slug from name
@@ -56,57 +50,50 @@ exports.addProduct = async (req, res) => {
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)+/g, '');
-      
     const id = uuidv4();
-    await pool.query(
-      "INSERT INTO products (id, name, slug, image, category_id, details, images) VALUES (?, ?, ?, ?, ?, ?, ?)",
-      [id, name, slug, image, category_id, details, JSON.stringify(images)]
-    );
+    try {
+      await schema.create("products", {
+        id,
+        name,
+        slug,
+        image,
+        category_id,
+        details,
+        images: JSON.stringify(images),
+      });
+    } catch (err) {
+      if (err.code === 'ER_DUP_ENTRY') {
+        return errorResponse(res, { statusCode: 400, message: "Slug already exists" });
+      }
+      throw err;
+    }
     return successResponse(res, {
       statusCode: 201,
       message: "Product created",
       payload: { id, name, slug, image, category_id, details, images },
     });
   } catch (err) {
-    if (err.code === 'ER_DUP_ENTRY') {
-      return errorResponse(res, { statusCode: 400, message: "Slug already exists" });
-    }
     return errorResponse(res, { statusCode: 500, message: "Server error" });
   }
 };
 
 exports.getProducts = async (req, res) => {
   try {
-    // Fetch all products with their categories
-    const [products] = await pool.query(`
-      SELECT p.*, 
-        JSON_OBJECT(
-          'id', c.id,
-          'name', c.name,
-          'description', c.description,
-          'image', c.image,
-          'created_at', c.created_at,
-          'isDeleted', c.isDeleted
-        ) AS category
-      FROM products p
-      LEFT JOIN categories c ON p.category_id = c.id
-      WHERE p.isDeleted = 0
-    `);
-    // Parse category JSON for each product
+    // Fetch all products and populate category
+    const products = await schema.fetchData(
+      "products",
+      {},
+      { populate: [{ field: "category_id", table: "categories", as: "category" }] }
+    );
+    // Parse images JSON and remove category_id
     const productsWithCategory = products.map(prod => {
-      let category = null;
-      if (typeof prod.category === 'string') {
-        try {
-          category = JSON.parse(prod.category);
-        } catch (e) {
-          category = prod.category;
-        }
-      } else if (typeof prod.category === 'object' && prod.category !== null) {
-        category = prod.category;
+      let images = prod.images;
+      if (typeof images === 'string') {
+        try { images = JSON.parse(images); } catch { /* ignore */ }
       }
       return {
         ...prod,
-        category
+        images,
       };
     });
     return successResponse(res, {
@@ -115,7 +102,6 @@ exports.getProducts = async (req, res) => {
       payload: productsWithCategory,
     });
   } catch (err) {
-     console.error("Error fetching products by category:", err);
     return errorResponse(res, { statusCode: 500, message: "Server error" });
   }
 };
@@ -123,32 +109,27 @@ exports.getProducts = async (req, res) => {
 exports.getProductsByCategory = async (req, res) => {
   const { category_id } = req.params;
   try {
-    // Fetch products by category with full category object
-    const [products] = await pool.query(`
-      SELECT p.*, 
-        JSON_OBJECT(
-          'id', c.id,
-          'name', c.name,
-          'description', c.description,
-          'image', c.image,
-          'created_at', c.created_at,
-          'isDeleted', c.isDeleted
-        ) AS category
-      FROM products p
-      LEFT JOIN categories c ON p.category_id = c.id
-      WHERE p.category_id = ? AND p.isDeleted = 0
-    `, [category_id]);
-    const productsWithCategory = products.map(prod => ({
-      ...prod,
-      category: prod.category ? JSON.parse(prod.category) : null
-    }));
+    const products = await schema.fetchData(
+      "products",
+      { category_id },
+      { populate: [{ field: "category_id", table: "categories", as: "category" }] }
+    );
+    const productsWithCategory = products.map(prod => {
+      let images = prod.images;
+      if (typeof images === 'string') {
+        try { images = JSON.parse(images); } catch { /* ignore */ }
+      }
+      return {
+        ...prod,
+        images,
+      };
+    });
     return successResponse(res, {
       statusCode: 200,
       message: "Products fetched",
       payload: productsWithCategory,
     });
   } catch (err) {
-    console.error("Error fetching products by category:", err);
     return errorResponse(res, { statusCode: 500, message: "Server error" });
   }
 };
@@ -156,30 +137,22 @@ exports.getProductsByCategory = async (req, res) => {
 exports.getProductById = async (req, res) => {
   const { id } = req.params;
   try {
-    // Fetch product by id with full category object
-    const [products] = await pool.query(`
-      SELECT p.*, 
-        JSON_OBJECT(
-          'id', c.id,
-          'name', c.name,
-          'description', c.description,
-          'image', c.image,
-          'created_at', c.created_at,
-          'isDeleted', c.isDeleted
-        ) AS category
-      FROM products p
-      LEFT JOIN categories c ON p.category_id = c.id
-      WHERE p.id = ? AND p.isDeleted = 0
-    `, [id]);
-    if (!products.length) {
+    const product = await schema.fetchOne(
+      "products",
+      { id },
+      { populate: [{ field: "category_id", table: "categories", as: "category" }] }
+    );
+    if (!product) {
       return errorResponse(res, { statusCode: 404, message: "Product not found" });
     }
-    const product = products[0];
-    product.category = product.category ? JSON.parse(product.category) : null;
+    let images = product.images;
+    if (typeof images === 'string') {
+      try { images = JSON.parse(images); } catch { /* ignore */ }
+    }
     return successResponse(res, {
       statusCode: 200,
       message: "Product fetched",
-      payload: product,
+      payload: { ...product, images },
     });
   } catch (err) {
     return errorResponse(res, { statusCode: 500, message: "Server error" });
@@ -189,30 +162,22 @@ exports.getProductById = async (req, res) => {
 exports.getProductBySlug = async (req, res) => {
   const { slug } = req.params;
   try {
-    // Fetch product by slug with full category object
-    const [products] = await pool.query(`
-      SELECT p.*, 
-        JSON_OBJECT(
-          'id', c.id,
-          'name', c.name,
-          'description', c.description,
-          'image', c.image,
-          'created_at', c.created_at,
-          'isDeleted', c.isDeleted
-        ) AS category
-      FROM products p
-      LEFT JOIN categories c ON p.category_id = c.id
-      WHERE p.slug = ? AND p.isDeleted = 0
-    `, [slug]);
-    if (!products.length) {
+    const product = await schema.fetchOne(
+      "products",
+      { slug },
+      { populate: [{ field: "category_id", table: "categories", as: "category" }] }
+    );
+    if (!product) {
       return errorResponse(res, { statusCode: 404, message: "Product not found" });
     }
-    const product = products[0];
-    product.category = product.category ? JSON.parse(product.category) : null;
+    let images = product.images;
+    if (typeof images === 'string') {
+      try { images = JSON.parse(images); } catch { /* ignore */ }
+    }
     return successResponse(res, {
       statusCode: 200,
       message: "Product fetched",
-      payload: product,
+      payload: { ...product, images },
     });
   } catch (err) {
     return errorResponse(res, { statusCode: 500, message: "Server error" });
@@ -222,11 +187,8 @@ exports.getProductBySlug = async (req, res) => {
 exports.deleteProduct = async (req, res) => {
   const { id } = req.params;
   try {
-    const [result] = await pool.query(
-      "UPDATE products SET isDeleted = 1 WHERE id = ?",
-      [id]
-    );
-    if (result.affectedRows === 0) {
+    const deleted = await schema.update("products", { id }, { isDeleted: 1 });
+    if (!deleted) {
       return errorResponse(res, { statusCode: 404, message: "Product not found" });
     }
     return successResponse(res, {
@@ -243,15 +205,11 @@ exports.updateProduct = async (req, res) => {
   const { id } = req.params;
   const updateData = { ...req.body };
   try {
-    // Ensure images is stored as JSON string if present
     if (updateData.images && Array.isArray(updateData.images)) {
       updateData.images = JSON.stringify(updateData.images);
     }
-    const [result] = await pool.query(
-      "UPDATE products SET ? WHERE id = ? AND isDeleted = 0",
-      [updateData, id]
-    );
-    if (result.affectedRows === 0) {
+    const updated = await schema.update("products", { id }, updateData);
+    if (!updated) {
       return errorResponse(res, { statusCode: 404, message: "Product not found or already deleted" });
     }
     return successResponse(res, {
@@ -260,7 +218,6 @@ exports.updateProduct = async (req, res) => {
       payload: null,
     });
   } catch (err) {
-    console.log("Update product error:", err);
     return errorResponse(res, { statusCode: 500, message: "Server error" });
   }
 };
@@ -268,11 +225,8 @@ exports.updateProduct = async (req, res) => {
 exports.deleteCategory = async (req, res) => {
   const { id } = req.params;
   try {
-    const [result] = await pool.query(
-      "UPDATE categories SET isDeleted = 1 WHERE id = ?",
-      [id]
-    );
-    if (result.affectedRows === 0) {
+    const deleted = await schema.update("categories", { id }, { isDeleted: 1 });
+    if (!deleted) {
       return errorResponse(res, { statusCode: 404, message: "Category not found" });
     }
     return successResponse(res, {
