@@ -1,7 +1,13 @@
-const express = require("express");
+const express = require('express');
 const router = express.Router();
-const authController = require("../controllers/authController");
-const { validate, registerSchema, loginSchema, forgotPasswordSchema } = require("../middleware/authValidation");
+const authController = require('../controllers/authController');
+const {
+  validate,
+  registerSchema,
+  loginSchema,
+  forgotPasswordSchema,
+  updateUserSchema,
+} = require('../middleware/authValidation');
 
 /**
  * @swagger
@@ -58,7 +64,7 @@ const { validate, registerSchema, loginSchema, forgotPasswordSchema } = require(
  *       500:
  *         description: Server error
  */
-router.post("/register", validate(registerSchema), authController.register);
+router.post('/register', validate(registerSchema), authController.register);
 
 /**
  * @swagger
@@ -110,7 +116,7 @@ router.post("/register", validate(registerSchema), authController.register);
  *       500:
  *         description: Server error
  */
-router.post("/login", validate(loginSchema), authController.login);
+router.post('/login', validate(loginSchema), authController.login);
 
 /**
  * @swagger
@@ -155,6 +161,55 @@ router.post("/login", validate(loginSchema), authController.login);
  *       500:
  *         description: Server error
  */
-router.post("/forgot-password", validate(forgotPasswordSchema), authController.forgotPassword);
+router.post('/forgot-password', validate(forgotPasswordSchema), authController.forgotPassword);
+
+/**
+ * @swagger
+ * /api/auth/update-profile:
+ *   put:
+ *     summary: Update user profile (address/contact fields)
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               phoneNumber:
+ *                 type: string
+ *                 example: "+1234567890"
+ *               address:
+ *                 type: string
+ *                 example: "123 Main St"
+ *               street:
+ *                 type: string
+ *                 example: "Main St"
+ *               apartment:
+ *                 type: string
+ *                 example: "Apt 4B"
+ *               city:
+ *                 type: string
+ *                 example: "Lagos"
+ *               state:
+ *                 type: string
+ *                 example: "Lagos State"
+ *     responses:
+ *       200:
+ *         description: User profile updated
+ *       400:
+ *         description: No valid fields to update
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Server error
+ */
+const { requireRole } = require('../middleware/role');
+router.put(
+  '/update-profile',
+  requireRole(['user', 'admin']),
+  validate(updateUserSchema),
+  authController.updateUser
+);
 
 module.exports = router;

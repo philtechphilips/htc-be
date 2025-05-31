@@ -1,8 +1,8 @@
-const express = require("express");
+const express = require('express');
 const router = express.Router();
-const cartController = require("../controllers/cartController");
-const { validate, addToCartSchema, removeFromCartSchema } = require("../middleware/cartValidation");
-const { requireRole } = require("../middleware/role");
+const cartController = require('../controllers/cartController');
+const { validate, addToCartSchema, removeFromCartSchema } = require('../middleware/cartValidation');
+const { requireRole } = require('../middleware/role');
 
 /**
  * @swagger
@@ -70,10 +70,37 @@ const { requireRole } = require("../middleware/role");
  *     responses:
  *       200:
  *         description: Cart updated
+ * /api/cart/checkout:
+ *   post:
+ *     summary: Checkout cart and send order to admin email
+ *     tags: [Cart]
+ *     responses:
+ *       200:
+ *         description: Checkout successful
+ *       400:
+ *         description: Cart is empty
+ *       500:
+ *         description: Server error
  */
-router.post("/", requireRole(["user", "admin"]), validate(addToCartSchema), cartController.addToCart);
-router.get("/", requireRole(["user", "admin"]), cartController.getCart);
-router.delete("/", requireRole(["user", "admin"]), validate(removeFromCartSchema), cartController.removeFromCart);
-router.put("/", requireRole(["user", "admin"]), validate(addToCartSchema), cartController.updateCart);
+router.post(
+  '/',
+  requireRole(['user', 'admin']),
+  validate(addToCartSchema),
+  cartController.addToCart
+);
+router.get('/', requireRole(['user', 'admin']), cartController.getCart);
+router.delete(
+  '/',
+  requireRole(['user', 'admin']),
+  validate(removeFromCartSchema),
+  cartController.removeFromCart
+);
+router.put(
+  '/',
+  requireRole(['user', 'admin']),
+  validate(addToCartSchema),
+  cartController.updateCart
+);
+router.post('/checkout', requireRole(['user', 'admin']), cartController.checkout);
 
 module.exports = router;
