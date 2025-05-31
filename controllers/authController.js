@@ -1,42 +1,43 @@
-const pool = require('../config/db');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
+const pool = require('../config/db');
+const schema = require('../utils/schema');
+const { errorResponse, successResponse } = require('../utils/helpers/response');
 
 exports.register = async (req, res) => {
-  const { email, password } = req.body;
+  const { firstName, lastName, email, password } = req.body;
   try {
-    const [rows] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
-    if (rows.length > 0) return res.status(400).json({ message: 'User already exists' });
+    const user = await schema.fetchOne('users', { email });
+    if (user) return errorResponse(res, { statusCode: 400, message: 'User already exists' });
     const hashedPassword = await bcrypt.hash(password, 10);
-    await pool.query('INSERT INTO users (email, password) VALUES (?, ?)', [email, hashedPassword]);
-    res.status(201).json({ message: 'User registered' });
+    const userdata = await schema.create('users', { firstName, lastName, email, password: hashedPassword });
+    return successResponse(res, { statusCode: 201, message: 'User registered', payload: userdata });
   } catch (err) {
-    res.status(500).json({ message: 'Server error' });
+    return errorResponse(res, { statusCode: 500, message: 'Server error' });
   }
 };
 
 exports.login = async (req, res) => {
   const { email, password } = req.body;
   try {
-    const [rows] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
-    if (rows.length === 0) return res.status(400).json({ message: 'Invalid credentials' });
-    const user = rows[0];
+    const user = await schema.fetchOne('users', { email });
+    if (!user) return errorResponse(res, { statusCode: 400, message: 'Invalid credentials' });
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(400).json({ message: 'Invalid credentials' });
+    if (!isMatch) return errorResponse(res, { statusCode: 400, message: 'Invalid credentials' });
     const token = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '1h' });
-    res.json({ token });
+    return successResponse(res, { statusCode: 200, message: 'Login successful', payload: null, token });
   } catch (err) {
-    res.status(500).json({ message: 'Server error' });
+    return errorResponse(res, { statusCode: 500, message: 'Server error' });
   }
 };
 
 exports.forgotPassword = async (req, res) => {
   const { email } = req.body;
   try {
-    const [rows] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
-    if (rows.length === 0) return res.status(400).json({ message: 'User not found' });
-    const token = jwt.sign({ id: rows[0].id }, process.env.JWT_SECRET, { expiresIn: '15m' });
+    const user = await schema.fetchOne('users', { email });
+    if (!user) return errorResponse(res, { statusCode: 400, message: 'User not found' });
+    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: '15m' });
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
@@ -51,8 +52,8 @@ exports.forgotPassword = async (req, res) => {
       text: `Reset your password using this token: ${token}`
     };
     await transporter.sendMail(mailOptions);
-    res.json({ message: 'Password reset email sent' });
+    return successResponse(res, { statusCode: 200, message: 'Password reset email sent', payload: null });
   } catch (err) {
-    res.status(500).json({ message: 'Server error' });
+    return errorResponse(res, { statusCode: 500, message: 'Server error' });
   }
 };
