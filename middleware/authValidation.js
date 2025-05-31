@@ -37,7 +37,6 @@ const categorySchema = Joi.object({
 
 const productSchema = Joi.object({
   name: Joi.string().min(2).max(255).required(),
-  slug: Joi.string().min(2).max(255).required(),
   image: Joi.string().required(),
   category_id: Joi.string().required(),
   details: Joi.string().allow("").required(),
@@ -47,7 +46,6 @@ const productSchema = Joi.object({
 
 const updateProductSchema = Joi.object({
   name: Joi.string().min(2).max(255),
-  slug: Joi.string().min(2).max(255),
   image: Joi.string(),
   category_id: Joi.string(),
   details: Joi.string().allow(""),

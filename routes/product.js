@@ -14,11 +14,21 @@ const { requireRole } = require("../middleware/role");
  *       required: true
  *       content:
  *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/Category'
+ *           example:
+ *             name: "Electronics"
+ *             description: "Devices and gadgets"
+ *             image: "data:image/png;base64,iVBORw0KGgoAAAANS..."
  *     responses:
  *       201:
  *         description: Category created
+ *         content:
+ *           application/json:
+ *             example:
+ *               id: "b1a7c8e2-1234-4f56-9abc-1234567890ab"
+ *               name: "Electronics"
+ *               description: "Devices and gadgets"
+ *               image: "data:image/png;base64,iVBORw0KGgoAAAANS..."
+ *               created_at: "2025-05-31T12:00:00.000Z"
  *       500:
  *         description: Server error
  */
@@ -33,6 +43,21 @@ router.post("/category", requireRole("admin"), validate(categorySchema), product
  *     responses:
  *       200:
  *         description: Categories fetched
+ *         content:
+ *           application/json:
+ *             example:
+ *               - id: "b1a7c8e2-1234-4f56-9abc-1234567890ab"
+ *                 name: "Electronics"
+ *                 description: "Devices and gadgets"
+ *                 image: "data:image/png;base64,iVBORw0KGgoAAAANS..."
+ *                 created_at: "2025-05-31T12:00:00.000Z"
+ *                 productCount: 5
+ *               - id: "c2b8d9f3-5678-4e12-8def-2345678901bc"
+ *                 name: "Books"
+ *                 description: "Printed and digital books"
+ *                 image: null
+ *                 created_at: "2025-05-31T12:00:00.000Z"
+ *                 productCount: 10
  *       500:
  *         description: Server error
  */
@@ -71,11 +96,30 @@ router.delete("/category/:id", requireRole("admin"), productController.deleteCat
  *       required: true
  *       content:
  *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/Product'
+ *           example:
+ *             name: "iPhone 15"
+ *             slug: "iphone-15"
+ *             image: "data:image/png;base64,iVBORw0KGgoAAAANS..."
+ *             category_id: "b1a7c8e2-1234-4f56-9abc-1234567890ab"
+ *             details: "Latest Apple iPhone with advanced features."
+ *             images: ["data:image/png;base64,iVBORw0KGgoAAAANS...", "data:image/png;base64,iVBORw0KGgoAAAANS..."]
+ *             isFeatured: true
  *     responses:
  *       201:
  *         description: Product created
+ *         content:
+ *           application/json:
+ *             example:
+ *               id: "d3c9e0f4-7890-4a23-9fgh-3456789012cd"
+ *               name: "iPhone 15"
+ *               slug: "iphone-15"
+ *               image: "data:image/png;base64,iVBORw0KGgoAAAANS..."
+ *               category_id: "b1a7c8e2-1234-4f56-9abc-1234567890ab"
+ *               details: "Latest Apple iPhone with advanced features."
+ *               images: ["data:image/png;base64,iVBORw0KGgoAAAANS...", "data:image/png;base64,iVBORw0KGgoAAAANS..."]
+ *               isFeatured: true
+ *               isDeleted: false
+ *               created_at: "2025-05-31T12:00:00.000Z"
  *       400:
  *         description: Slug already exists or category not found
  *       500:
@@ -92,6 +136,29 @@ router.post("/product", requireRole("admin"), validate(productSchema), productCo
  *     responses:
  *       200:
  *         description: Products fetched
+ *         content:
+ *           application/json:
+ *             example:
+ *               - id: "d3c9e0f4-7890-4a23-9fgh-3456789012cd"
+ *                 name: "iPhone 15"
+ *                 slug: "iphone-15"
+ *                 image: "data:image/png;base64,iVBORw0KGgoAAAANS..."
+ *                 category_id: "b1a7c8e2-1234-4f56-9abc-1234567890ab"
+ *                 details: "Latest Apple iPhone with advanced features."
+ *                 images: ["data:image/png;base64,iVBORw0KGgoAAAANS...", "data:image/png;base64,iVBORw0KGgoAAAANS..."]
+ *                 isFeatured: true
+ *                 isDeleted: false
+ *                 created_at: "2025-05-31T12:00:00.000Z"
+ *               - id: "e4d0f1g5-8901-4b34-0hij-4567890123de"
+ *                 name: "Samsung Galaxy S24"
+ *                 slug: "galaxy-s24"
+ *                 image: null
+ *                 category_id: "b1a7c8e2-1234-4f56-9abc-1234567890ab"
+ *                 details: "Latest Samsung flagship."
+ *                 images: []
+ *                 isFeatured: false
+ *                 isDeleted: false
+ *                 created_at: "2025-05-31T12:00:00.000Z"
  *       500:
  *         description: Server error
  */
@@ -113,6 +180,19 @@ router.get("/product", productController.getProducts);
  *     responses:
  *       200:
  *         description: Product fetched
+ *         content:
+ *           application/json:
+ *             example:
+ *               id: "d3c9e0f4-7890-4a23-9fgh-3456789012cd"
+ *               name: "iPhone 15"
+ *               slug: "iphone-15"
+ *               image: "data:image/png;base64,iVBORw0KGgoAAAANS..."
+ *               category_id: "b1a7c8e2-1234-4f56-9abc-1234567890ab"
+ *               details: "Latest Apple iPhone with advanced features."
+ *               images: ["data:image/png;base64,iVBORw0KGgoAAAANS...", "data:image/png;base64,iVBORw0KGgoAAAANS..."]
+ *               isFeatured: true
+ *               isDeleted: false
+ *               created_at: "2025-05-31T12:00:00.000Z"
  *       404:
  *         description: Product not found
  *       500:
@@ -136,6 +216,19 @@ router.get("/product/:id", productController.getProductById);
  *     responses:
  *       200:
  *         description: Product fetched
+ *         content:
+ *           application/json:
+ *             example:
+ *               id: "d3c9e0f4-7890-4a23-9fgh-3456789012cd"
+ *               name: "iPhone 15"
+ *               slug: "iphone-15"
+ *               image: "data:image/png;base64,iVBORw0KGgoAAAANS..."
+ *               category_id: "b1a7c8e2-1234-4f56-9abc-1234567890ab"
+ *               details: "Latest Apple iPhone with advanced features."
+ *               images: ["data:image/png;base64,iVBORw0KGgoAAAANS...", "data:image/png;base64,iVBORw0KGgoAAAANS..."]
+ *               isFeatured: true
+ *               isDeleted: false
+ *               created_at: "2025-05-31T12:00:00.000Z"
  *       404:
  *         description: Product not found
  *       500:
@@ -159,6 +252,19 @@ router.get("/product/slug/:slug", productController.getProductBySlug);
  *     responses:
  *       200:
  *         description: Products fetched
+ *         content:
+ *           application/json:
+ *             example:
+ *               - id: "d3c9e0f4-7890-4a23-9fgh-3456789012cd"
+ *                 name: "iPhone 15"
+ *                 slug: "iphone-15"
+ *                 image: "data:image/png;base64,iVBORw0KGgoAAAANS..."
+ *                 category_id: "b1a7c8e2-1234-4f56-9abc-1234567890ab"
+ *                 details: "Latest Apple iPhone with advanced features."
+ *                 images: ["data:image/png;base64,iVBORw0KGgoAAAANS...", "data:image/png;base64,iVBORw0KGgoAAAANS..."]
+ *                 isFeatured: true
+ *                 isDeleted: false
+ *                 created_at: "2025-05-31T12:00:00.000Z"
  *       500:
  *         description: Server error
  */
@@ -181,11 +287,28 @@ router.get("/product/category/:category_id", productController.getProductsByCate
  *       required: true
  *       content:
  *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/UpdateProduct'
+ *           example:
+ *             name: "iPhone 15 Pro"
+ *             image: "data:image/png;base64,iVBORw0KGgoAAAANS..."
+ *             details: "Updated Apple iPhone with more features."
+ *             images: ["data:image/png;base64,iVBORw0KGgoAAAANS..."]
+ *             isFeatured: true
  *     responses:
  *       200:
  *         description: Product updated
+ *         content:
+ *           application/json:
+ *             example:
+ *               id: "d3c9e0f4-7890-4a23-9fgh-3456789012cd"
+ *               name: "iPhone 15 Pro"
+ *               slug: "iphone-15"
+ *               image: "data:image/png;base64,iVBORw0KGgoAAAANS..."
+ *               category_id: "b1a7c8e2-1234-4f56-9abc-1234567890ab"
+ *               details: "Updated Apple iPhone with more features."
+ *               images: ["data:image/png;base64,iVBORw0KGgoAAAANS..."]
+ *               isFeatured: true
+ *               isDeleted: false
+ *               created_at: "2025-05-31T12:00:00.000Z"
  *       404:
  *         description: Product not found
  *       500:

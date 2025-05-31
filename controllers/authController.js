@@ -65,6 +65,7 @@ exports.login = async (req, res) => {
       token,
     });
   } catch (err) {
+    console.log("Login error:", err);
     return errorResponse(res, { statusCode: 500, message: "Server error" });
   }
 };
