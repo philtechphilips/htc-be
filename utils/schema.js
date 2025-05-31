@@ -39,8 +39,8 @@ async function fetchData(table, filter = {}, options = {}) {
   return rows;
 }
 
-// Fetch one row by id or filter
-async function fetchOne(table, filter) {
+// Fetch one row by id or filter, with optional populate
+async function fetchOne(table, filter, options = {}) {
   let sql = `SELECT * FROM \`${table}\``;
   let values = [];
   let whereClauses = [];
@@ -57,7 +57,23 @@ async function fetchOne(table, filter) {
     sql += ` WHERE ${whereClauses.join(' AND ')}`;
   }
   const [rows] = await pool.query(sql, values);
-  return rows[0] || null;
+  let row = rows[0] || null;
+
+  // Handle population of related fields for single row
+  if (row && options.populate && Array.isArray(options.populate) && options.populate.length > 0) {
+    for (const pop of options.populate) {
+      const { field, table: relatedTable, as } = pop;
+      if (row[field]) {
+        const [relatedRows] = await pool.query(
+          `SELECT * FROM \`${relatedTable}\` WHERE id = ? AND (isDeleted IS NULL OR isDeleted = 0)`,
+          [row[field]]
+        );
+        row[as || field.replace('_id', '')] = relatedRows[0] || null;
+        delete row[field];
+      }
+    }
+  }
+  return row;
 }
 
 // Create a new row
