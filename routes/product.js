@@ -32,7 +32,7 @@ const { requireRole } = require("../middleware/role");
  *       500:
  *         description: Server error
  */
-router.post("/category", requireRole("admin"), validate(categorySchema), productController.addCategory);
+router.post("/category", requireRole(["admin"]), validate(categorySchema), productController.addCategory);
 
 /**
  * @swagger
@@ -84,7 +84,7 @@ router.get("/category", productController.getCategories);
  *       500:
  *         description: Server error
  */
-router.delete("/category/:id", requireRole("admin"), productController.deleteCategory);
+router.delete("/category/:id", requireRole(["admin"]), productController.deleteCategory);
 
 /**
  * @swagger
@@ -125,7 +125,7 @@ router.delete("/category/:id", requireRole("admin"), productController.deleteCat
  *       500:
  *         description: Server error
  */
-router.post("/product", requireRole("admin"), validate(productSchema), productController.addProduct);
+router.post("/product", requireRole(["admin"]), validate(productSchema), productController.addProduct);
 
 /**
  * @swagger
@@ -314,7 +314,7 @@ router.get("/product/category/:category_id", productController.getProductsByCate
  *       500:
  *         description: Server error
  */
-router.put("/product/:id", requireRole("admin"), validate(updateProductSchema), productController.updateProduct);
+router.put("/product/:id", requireRole(["admin"]), validate(updateProductSchema), productController.updateProduct);
 
 /**
  * @swagger
@@ -337,6 +337,6 @@ router.put("/product/:id", requireRole("admin"), validate(updateProductSchema), 
  *       500:
  *         description: Server error
  */
-router.delete("/product/:id", requireRole("admin"), productController.deleteProduct);
+router.delete("/product/:id", requireRole(["admin"]), productController.deleteProduct);
 
 module.exports = router;

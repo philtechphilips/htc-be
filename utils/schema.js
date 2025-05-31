@@ -1,7 +1,7 @@
 const pool = require("../config/db");
 
-// Fetch all rows from a table with optional filter (object)
-async function fetchData(table, filter = {}) {
+// Fetch all rows from a table with optional filter (object) and populate option
+async function fetchData(table, filter = {}, options = {}) {
   let sql = `SELECT * FROM \`${table}\``;
   let values = [];
   // Always exclude deleted rows if isDeleted column exists
@@ -16,6 +16,26 @@ async function fetchData(table, filter = {}) {
     sql += ` WHERE ${whereClauses.join(' AND ')}`;
   }
   const [rows] = await pool.query(sql, values);
+
+  // Handle population of related fields
+  if (options.populate && Array.isArray(options.populate) && options.populate.length > 0) {
+    // For each row, for each populate field, fetch related data
+    for (const pop of options.populate) {
+      const { field, table: relatedTable, as } = pop;
+      await Promise.all(
+        rows.map(async (row, idx) => {
+          if (row[field]) {
+            const [relatedRows] = await pool.query(
+              `SELECT * FROM \`${relatedTable}\` WHERE id = ? AND (isDeleted IS NULL OR isDeleted = 0)`,
+              [row[field]]
+            );
+            rows[idx][as || field.replace('_id', '')] = relatedRows[0] || null;
+            delete rows[idx][field];
+          }
+        })
+      );
+    }
+  }
   return rows;
 }
 
