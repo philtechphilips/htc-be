@@ -60,7 +60,7 @@ exports.login = async (req, res) => {
     const { password: _pw, ...userWithoutPassword } = user;
     return successResponse(res, {
       statusCode: 200,
-      message: "Login successful",
+      message: "Signed in successfully!",
       payload: userWithoutPassword,
       token,
     });

@@ -18,7 +18,7 @@ pool
     console.error("MySQL database connection failed:", err.message);
   });
 
-app.use(cors()); // Allow all origins for CORS
+app.use(cors(['*'])); // Allow all origins for CORS
 app.use(express.json());
 app.use("/api", routes);
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs));
