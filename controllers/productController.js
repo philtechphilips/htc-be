@@ -1,38 +1,43 @@
-const { v4: uuidv4 } = require("uuid");
-const schema = require("../utils/schema");
-const { errorResponse, successResponse } = require("../utils/helpers/response");
+const { v4: uuidv4 } = require('uuid');
+const schema = require('../utils/schema');
+const { errorResponse, successResponse } = require('../utils/helpers/response');
 
 exports.addCategory = async (req, res) => {
   const { name, description, image } = req.body;
   try {
+    // Check for duplicate category name (case-insensitive)
+    const existing = await schema.fetchOne('categories', { name: name.trim() });
+    if (existing) {
+      return errorResponse(res, { statusCode: 400, message: 'Category already exists' });
+    }
     const id = uuidv4();
-    await schema.create("categories", { id, name, description, image });
+    await schema.create('categories', { id, name, description, image });
     return successResponse(res, {
       statusCode: 201,
-      message: "Category created",
+      message: 'Category created',
       payload: { id, name, description, image },
     });
   } catch (err) {
-    return errorResponse(res, { statusCode: 500, message: "Server error" });
+    return errorResponse(res, { statusCode: 500, message: 'Server error' });
   }
 };
 
 exports.getCategories = async (req, res) => {
   try {
-    const categories = await schema.fetchData("categories");
+    const categories = await schema.fetchData('categories');
     // For each category, count products
     for (const cat of categories) {
       // Use schema.fetchData for product count
-      const products = await schema.fetchData("products", { category_id: cat.id });
+      const products = await schema.fetchData('products', { category_id: cat.id });
       cat.productCount = products.length;
     }
     return successResponse(res, {
       statusCode: 200,
-      message: "Categories fetched",
+      message: 'Categories fetched',
       payload: categories,
     });
   } catch (err) {
-    return errorResponse(res, { statusCode: 500, message: "Server error" });
+    return errorResponse(res, { statusCode: 500, message: 'Server error' });
   }
 };
 
@@ -40,9 +45,9 @@ exports.addProduct = async (req, res) => {
   let { name, image, category_id, details, images } = req.body;
   try {
     // Check category exists
-    const category = await schema.fetchOne("categories", { id: category_id });
+    const category = await schema.fetchOne('categories', { id: category_id });
     if (!category) {
-      return errorResponse(res, { statusCode: 400, message: "Category not found" });
+      return errorResponse(res, { statusCode: 400, message: 'Category not found' });
     }
     // Auto-generate slug from name
     let slug = name
@@ -52,7 +57,7 @@ exports.addProduct = async (req, res) => {
       .replace(/(^-|-$)+/g, '');
     const id = uuidv4();
     try {
-      await schema.create("products", {
+      await schema.create('products', {
         id,
         name,
         slug,
@@ -63,17 +68,17 @@ exports.addProduct = async (req, res) => {
       });
     } catch (err) {
       if (err.code === 'ER_DUP_ENTRY') {
-        return errorResponse(res, { statusCode: 400, message: "Slug already exists" });
+        return errorResponse(res, { statusCode: 400, message: 'Slug already exists' });
       }
       throw err;
     }
     return successResponse(res, {
       statusCode: 201,
-      message: "Product created",
+      message: 'Product created',
       payload: { id, name, slug, image, category_id, details, images },
     });
   } catch (err) {
-    return errorResponse(res, { statusCode: 500, message: "Server error" });
+    return errorResponse(res, { statusCode: 500, message: 'Server error' });
   }
 };
 
@@ -81,15 +86,19 @@ exports.getProducts = async (req, res) => {
   try {
     // Fetch all products and populate category
     const products = await schema.fetchData(
-      "products",
+      'products',
       {},
-      { populate: [{ field: "category_id", table: "categories", as: "category" }] }
+      { populate: [{ field: 'category_id', table: 'categories', as: 'category' }] }
     );
     // Parse images JSON and remove category_id
-    const productsWithCategory = products.map(prod => {
+    const productsWithCategory = products.map((prod) => {
       let images = prod.images;
       if (typeof images === 'string') {
-        try { images = JSON.parse(images); } catch { /* ignore */ }
+        try {
+          images = JSON.parse(images);
+        } catch {
+          /* ignore */
+        }
       }
       return {
         ...prod,
@@ -98,11 +107,11 @@ exports.getProducts = async (req, res) => {
     });
     return successResponse(res, {
       statusCode: 200,
-      message: "Products fetched",
+      message: 'Products fetched',
       payload: productsWithCategory,
     });
   } catch (err) {
-    return errorResponse(res, { statusCode: 500, message: "Server error" });
+    return errorResponse(res, { statusCode: 500, message: 'Server error' });
   }
 };
 
@@ -110,14 +119,18 @@ exports.getProductsByCategory = async (req, res) => {
   const { category_id } = req.params;
   try {
     const products = await schema.fetchData(
-      "products",
+      'products',
       { category_id },
-      { populate: [{ field: "category_id", table: "categories", as: "category" }] }
+      { populate: [{ field: 'category_id', table: 'categories', as: 'category' }] }
     );
-    const productsWithCategory = products.map(prod => {
+    const productsWithCategory = products.map((prod) => {
       let images = prod.images;
       if (typeof images === 'string') {
-        try { images = JSON.parse(images); } catch { /* ignore */ }
+        try {
+          images = JSON.parse(images);
+        } catch {
+          /* ignore */
+        }
       }
       return {
         ...prod,
@@ -126,11 +139,11 @@ exports.getProductsByCategory = async (req, res) => {
     });
     return successResponse(res, {
       statusCode: 200,
-      message: "Products fetched",
+      message: 'Products fetched',
       payload: productsWithCategory,
     });
   } catch (err) {
-    return errorResponse(res, { statusCode: 500, message: "Server error" });
+    return errorResponse(res, { statusCode: 500, message: 'Server error' });
   }
 };
 
@@ -138,24 +151,28 @@ exports.getProductById = async (req, res) => {
   const { id } = req.params;
   try {
     const product = await schema.fetchOne(
-      "products",
+      'products',
       { id },
-      { populate: [{ field: "category_id", table: "categories", as: "category" }] }
+      { populate: [{ field: 'category_id', table: 'categories', as: 'category' }] }
     );
     if (!product) {
-      return errorResponse(res, { statusCode: 404, message: "Product not found" });
+      return errorResponse(res, { statusCode: 404, message: 'Product not found' });
     }
     let images = product.images;
     if (typeof images === 'string') {
-      try { images = JSON.parse(images); } catch { /* ignore */ }
+      try {
+        images = JSON.parse(images);
+      } catch {
+        /* ignore */
+      }
     }
     return successResponse(res, {
       statusCode: 200,
-      message: "Product fetched",
+      message: 'Product fetched',
       payload: { ...product, images },
     });
   } catch (err) {
-    return errorResponse(res, { statusCode: 500, message: "Server error" });
+    return errorResponse(res, { statusCode: 500, message: 'Server error' });
   }
 };
 
@@ -163,41 +180,45 @@ exports.getProductBySlug = async (req, res) => {
   const { slug } = req.params;
   try {
     const product = await schema.fetchOne(
-      "products",
+      'products',
       { slug },
-      { populate: [{ field: "category_id", table: "categories", as: "category" }] }
+      { populate: [{ field: 'category_id', table: 'categories', as: 'category' }] }
     );
     if (!product) {
-      return errorResponse(res, { statusCode: 404, message: "Product not found" });
+      return errorResponse(res, { statusCode: 404, message: 'Product not found' });
     }
     let images = product.images;
     if (typeof images === 'string') {
-      try { images = JSON.parse(images); } catch { /* ignore */ }
+      try {
+        images = JSON.parse(images);
+      } catch {
+        /* ignore */
+      }
     }
     return successResponse(res, {
       statusCode: 200,
-      message: "Product fetched",
+      message: 'Product fetched',
       payload: { ...product, images },
     });
   } catch (err) {
-    return errorResponse(res, { statusCode: 500, message: "Server error" });
+    return errorResponse(res, { statusCode: 500, message: 'Server error' });
   }
 };
 
 exports.deleteProduct = async (req, res) => {
   const { id } = req.params;
   try {
-    const deleted = await schema.update("products", { id }, { isDeleted: 1 });
+    const deleted = await schema.update('products', { id }, { isDeleted: 1 });
     if (!deleted) {
-      return errorResponse(res, { statusCode: 404, message: "Product not found" });
+      return errorResponse(res, { statusCode: 404, message: 'Product not found' });
     }
     return successResponse(res, {
       statusCode: 200,
-      message: "Product deleted",
+      message: 'Product deleted',
       payload: null,
     });
   } catch (err) {
-    return errorResponse(res, { statusCode: 500, message: "Server error" });
+    return errorResponse(res, { statusCode: 500, message: 'Server error' });
   }
 };
 
@@ -208,33 +229,68 @@ exports.updateProduct = async (req, res) => {
     if (updateData.images && Array.isArray(updateData.images)) {
       updateData.images = JSON.stringify(updateData.images);
     }
-    const updated = await schema.update("products", { id }, updateData);
+    const updated = await schema.update('products', { id }, updateData);
     if (!updated) {
-      return errorResponse(res, { statusCode: 404, message: "Product not found or already deleted" });
+      return errorResponse(res, {
+        statusCode: 404,
+        message: 'Product not found or already deleted',
+      });
     }
     return successResponse(res, {
       statusCode: 200,
-      message: "Product updated",
+      message: 'Product updated',
       payload: null,
     });
   } catch (err) {
-    return errorResponse(res, { statusCode: 500, message: "Server error" });
+    return errorResponse(res, { statusCode: 500, message: 'Server error' });
   }
 };
 
 exports.deleteCategory = async (req, res) => {
   const { id } = req.params;
   try {
-    const deleted = await schema.update("categories", { id }, { isDeleted: 1 });
+    const deleted = await schema.update('categories', { id }, { isDeleted: 1 });
     if (!deleted) {
-      return errorResponse(res, { statusCode: 404, message: "Category not found" });
+      return errorResponse(res, { statusCode: 404, message: 'Category not found' });
     }
     return successResponse(res, {
       statusCode: 200,
-      message: "Category deleted",
+      message: 'Category deleted',
       payload: null,
     });
   } catch (err) {
-    return errorResponse(res, { statusCode: 500, message: "Server error" });
+    return errorResponse(res, { statusCode: 500, message: 'Server error' });
+  }
+};
+
+// Fetch featured products
+exports.getFeaturedProducts = async (req, res) => {
+  try {
+    const products = await schema.fetchData(
+      'products',
+      { isFeatured: 1 },
+      { populate: [{ field: 'category_id', table: 'categories', as: 'category' }] }
+    );
+    const productsWithCategory = products.map((prod) => {
+      let images = prod.images;
+      if (typeof images === 'string') {
+        try {
+          images = JSON.parse(images);
+        } catch {
+          /* ignore */
+        }
+      }
+      return {
+        ...prod,
+        images,
+      };
+    });
+    return successResponse(res, {
+      statusCode: 200,
+      message: 'Featured products fetched',
+      payload: productsWithCategory,
+    });
+  } catch (err) {
+    return errorResponse(res, { statusCode: 500, message: 'Server error' });
   }
 };

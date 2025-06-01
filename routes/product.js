@@ -1,8 +1,13 @@
-const express = require("express");
+const express = require('express');
 const router = express.Router();
-const productController = require("../controllers/productController");
-const { validate, categorySchema, productSchema, updateProductSchema } = require("../middleware/authValidation");
-const { requireRole } = require("../middleware/role");
+const productController = require('../controllers/productController');
+const {
+  validate,
+  categorySchema,
+  productSchema,
+  updateProductSchema,
+} = require('../middleware/authValidation');
+const { requireRole } = require('../middleware/role');
 
 /**
  * @swagger
@@ -32,7 +37,12 @@ const { requireRole } = require("../middleware/role");
  *       500:
  *         description: Server error
  */
-router.post("/category", requireRole(["admin"]), validate(categorySchema), productController.addCategory);
+router.post(
+  '/category',
+  requireRole(['admin']),
+  validate(categorySchema),
+  productController.addCategory
+);
 
 /**
  * @swagger
@@ -61,7 +71,7 @@ router.post("/category", requireRole(["admin"]), validate(categorySchema), produ
  *       500:
  *         description: Server error
  */
-router.get("/category", productController.getCategories);
+router.get('/category', productController.getCategories);
 
 /**
  * @swagger
@@ -84,7 +94,7 @@ router.get("/category", productController.getCategories);
  *       500:
  *         description: Server error
  */
-router.delete("/category/:id", requireRole(["admin"]), productController.deleteCategory);
+router.delete('/category/:id', requireRole(['admin']), productController.deleteCategory);
 
 /**
  * @swagger
@@ -125,7 +135,12 @@ router.delete("/category/:id", requireRole(["admin"]), productController.deleteC
  *       500:
  *         description: Server error
  */
-router.post("/product", requireRole(["admin"]), validate(productSchema), productController.addProduct);
+router.post(
+  '/product',
+  requireRole(['admin']),
+  validate(productSchema),
+  productController.addProduct
+);
 
 /**
  * @swagger
@@ -162,7 +177,7 @@ router.post("/product", requireRole(["admin"]), validate(productSchema), product
  *       500:
  *         description: Server error
  */
-router.get("/product", productController.getProducts);
+router.get('/product', productController.getProducts);
 
 /**
  * @swagger
@@ -198,7 +213,7 @@ router.get("/product", productController.getProducts);
  *       500:
  *         description: Server error
  */
-router.get("/product/:id", productController.getProductById);
+router.get('/product/:id', productController.getProductById);
 
 /**
  * @swagger
@@ -234,7 +249,7 @@ router.get("/product/:id", productController.getProductById);
  *       500:
  *         description: Server error
  */
-router.get("/product/slug/:slug", productController.getProductBySlug);
+router.get('/product/slug/:slug', productController.getProductBySlug);
 
 /**
  * @swagger
@@ -268,7 +283,7 @@ router.get("/product/slug/:slug", productController.getProductBySlug);
  *       500:
  *         description: Server error
  */
-router.get("/product/category/:category_id", productController.getProductsByCategory);
+router.get('/product/category/:category_id', productController.getProductsByCategory);
 
 /**
  * @swagger
@@ -314,7 +329,12 @@ router.get("/product/category/:category_id", productController.getProductsByCate
  *       500:
  *         description: Server error
  */
-router.put("/product/:id", requireRole(["admin"]), validate(updateProductSchema), productController.updateProduct);
+router.put(
+  '/product/:id',
+  requireRole(['admin']),
+  validate(updateProductSchema),
+  productController.updateProduct
+);
 
 /**
  * @swagger
@@ -337,6 +357,40 @@ router.put("/product/:id", requireRole(["admin"]), validate(updateProductSchema)
  *       500:
  *         description: Server error
  */
-router.delete("/product/:id", requireRole(["admin"]), productController.deleteProduct);
+router.delete('/product/:id', requireRole(['admin']), productController.deleteProduct);
+
+/**
+ * @swagger
+ * /api/product/featured:
+ *   get:
+ *     summary: Fetch all featured products
+ *     tags: [Product]
+ *     responses:
+ *       200:
+ *         description: Featured products fetched
+ *         content:
+ *           application/json:
+ *             example:
+ *               - id: "d3c9e0f4-7890-4a23-9fgh-3456789012cd"
+ *                 name: "iPhone 15"
+ *                 slug: "iphone-15"
+ *                 image: "data:image/png;base64,iVBORw0KGgoAAAANS..."
+ *                 category_id: "b1a7c8e2-1234-4f56-9abc-1234567890ab"
+ *                 details: "Latest Apple iPhone with advanced features."
+ *                 images: ["data:image/png;base64,iVBORw0KGgoAAAANS...", "data:image/png;base64,iVBORw0KGgoAAAANS..."]
+ *                 isFeatured: true
+ *                 isDeleted: false
+ *                 created_at: "2025-05-31T12:00:00.000Z"
+ *                 category:
+ *                   id: "b1a7c8e2-1234-4f56-9abc-1234567890ab"
+ *                   name: "Electronics"
+ *                   description: "Devices and gadgets"
+ *                   image: "data:image/png;base64,iVBORw0KGgoAAAANS..."
+ *                   created_at: "2025-05-31T12:00:00.000Z"
+ *                   isDeleted: false
+ *       500:
+ *         description: Server error
+ */
+router.get('/featured', require('../controllers/productController').getFeaturedProducts);
 
 module.exports = router;
