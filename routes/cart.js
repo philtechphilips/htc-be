@@ -3,6 +3,7 @@ const router = express.Router();
 const cartController = require('../controllers/cartController');
 const { validate, addToCartSchema, removeFromCartSchema } = require('../middleware/cartValidation');
 const { requireRole } = require('../middleware/role');
+const { validateCheckout } = require('../middleware/checkoutValidation');
 
 /**
  * @swagger
@@ -101,6 +102,6 @@ router.put(
   validate(addToCartSchema),
   cartController.updateCart
 );
-router.post('/checkout', requireRole(['user', 'admin']), cartController.checkout);
+router.post('/checkout', requireRole(['user', 'admin']), validateCheckout, cartController.checkout);
 
 module.exports = router;

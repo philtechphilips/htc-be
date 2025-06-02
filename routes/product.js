@@ -46,7 +46,7 @@ router.post(
 
 /**
  * @swagger
- * /api/product/category:
+ * /api/product/categories:
  *   get:
  *     summary: Get all categories (with product count)
  *     tags: [Product]
@@ -71,7 +71,7 @@ router.post(
  *       500:
  *         description: Server error
  */
-router.get('/category', productController.getCategories);
+router.get('/categories', productController.getCategories);
 
 /**
  * @swagger
@@ -98,7 +98,7 @@ router.delete('/category/:id', requireRole(['admin']), productController.deleteC
 
 /**
  * @swagger
- * /api/product/product:
+ * /api/product:
  *   post:
  *     summary: Add a new product
  *     tags: [Product]
@@ -135,16 +135,11 @@ router.delete('/category/:id', requireRole(['admin']), productController.deleteC
  *       500:
  *         description: Server error
  */
-router.post(
-  '/product',
-  requireRole(['admin']),
-  validate(productSchema),
-  productController.addProduct
-);
+router.post('/', requireRole(['admin']), validate(productSchema), productController.addProduct);
 
 /**
  * @swagger
- * /api/product/product:
+ * /api/products:
  *   get:
  *     summary: Fetch all products
  *     tags: [Product]
@@ -177,11 +172,45 @@ router.post(
  *       500:
  *         description: Server error
  */
-router.get('/product', productController.getProducts);
+router.get('/products', productController.getProducts);
 
 /**
  * @swagger
- * /api/product/product/{id}:
+ * /api/product/featured:
+ *   get:
+ *     summary: Fetch all featured products
+ *     tags: [Product]
+ *     responses:
+ *       200:
+ *         description: Featured products fetched
+ *         content:
+ *           application/json:
+ *             example:
+ *               - id: "d3c9e0f4-7890-4a23-9fgh-3456789012cd"
+ *                 name: "iPhone 15"
+ *                 slug: "iphone-15"
+ *                 image: "data:image/png;base64,iVBORw0KGgoAAAANS..."
+ *                 category_id: "b1a7c8e2-1234-4f56-9abc-1234567890ab"
+ *                 details: "Latest Apple iPhone with advanced features."
+ *                 images: ["data:image/png;base64,iVBORw0KGgoAAAANS...", "data:image/png;base64,iVBORw0KGgoAAAANS..."]
+ *                 isFeatured: true
+ *                 isDeleted: false
+ *                 created_at: "2025-05-31T12:00:00.000Z"
+ *                 category:
+ *                   id: "b1a7c8e2-1234-4f56-9abc-1234567890ab"
+ *                   name: "Electronics"
+ *                   description: "Devices and gadgets"
+ *                   image: "data:image/png;base64,iVBORw0KGgoAAAANS..."
+ *                   created_at: "2025-05-31T12:00:00.000Z"
+ *                   isDeleted: false
+ *       500:
+ *         description: Server error
+ */
+router.get('/featured', require('../controllers/productController').getFeaturedProducts);
+
+/**
+ * @swagger
+ * /api/product/{id}:
  *   get:
  *     summary: Fetch product by ID
  *     tags: [Product]
@@ -213,11 +242,11 @@ router.get('/product', productController.getProducts);
  *       500:
  *         description: Server error
  */
-router.get('/product/:id', productController.getProductById);
+router.get('/:id', productController.getProductById);
 
 /**
  * @swagger
- * /api/product/product/slug/{slug}:
+ * /api/product/slug/{slug}:
  *   get:
  *     summary: Fetch product by slug
  *     tags: [Product]
@@ -253,7 +282,7 @@ router.get('/product/slug/:slug', productController.getProductBySlug);
 
 /**
  * @swagger
- * /api/product/product/category/{category_id}:
+ * /api/product/category/{category_id}:
  *   get:
  *     summary: Fetch products by category
  *     tags: [Product]
@@ -283,11 +312,11 @@ router.get('/product/slug/:slug', productController.getProductBySlug);
  *       500:
  *         description: Server error
  */
-router.get('/product/category/:category_id', productController.getProductsByCategory);
+router.get('/category/:category_id', productController.getProductsByCategory);
 
 /**
  * @swagger
- * /api/product/product/{id}:
+ * /api/product/{id}:
  *   put:
  *     summary: Update a product
  *     tags: [Product]
@@ -330,7 +359,7 @@ router.get('/product/category/:category_id', productController.getProductsByCate
  *         description: Server error
  */
 router.put(
-  '/product/:id',
+  '/:id',
   requireRole(['admin']),
   validate(updateProductSchema),
   productController.updateProduct
@@ -338,7 +367,7 @@ router.put(
 
 /**
  * @swagger
- * /api/product/product/{id}:
+ * /api/product/{id}:
  *   delete:
  *     summary: Delete a product (cold delete)
  *     tags: [Product]
@@ -357,40 +386,6 @@ router.put(
  *       500:
  *         description: Server error
  */
-router.delete('/product/:id', requireRole(['admin']), productController.deleteProduct);
-
-/**
- * @swagger
- * /api/product/featured:
- *   get:
- *     summary: Fetch all featured products
- *     tags: [Product]
- *     responses:
- *       200:
- *         description: Featured products fetched
- *         content:
- *           application/json:
- *             example:
- *               - id: "d3c9e0f4-7890-4a23-9fgh-3456789012cd"
- *                 name: "iPhone 15"
- *                 slug: "iphone-15"
- *                 image: "data:image/png;base64,iVBORw0KGgoAAAANS..."
- *                 category_id: "b1a7c8e2-1234-4f56-9abc-1234567890ab"
- *                 details: "Latest Apple iPhone with advanced features."
- *                 images: ["data:image/png;base64,iVBORw0KGgoAAAANS...", "data:image/png;base64,iVBORw0KGgoAAAANS..."]
- *                 isFeatured: true
- *                 isDeleted: false
- *                 created_at: "2025-05-31T12:00:00.000Z"
- *                 category:
- *                   id: "b1a7c8e2-1234-4f56-9abc-1234567890ab"
- *                   name: "Electronics"
- *                   description: "Devices and gadgets"
- *                   image: "data:image/png;base64,iVBORw0KGgoAAAANS..."
- *                   created_at: "2025-05-31T12:00:00.000Z"
- *                   isDeleted: false
- *       500:
- *         description: Server error
- */
-router.get('/featured', require('../controllers/productController').getFeaturedProducts);
+router.delete('/:id', requireRole(['admin']), productController.deleteProduct);
 
 module.exports = router;

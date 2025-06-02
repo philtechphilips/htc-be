@@ -84,30 +84,47 @@ exports.updateCart = async (req, res) => {
 
 // Checkout: send user and cart details to admin email
 exports.checkout = async (req, res) => {
-  const user_id = req.user.id;
+  // Use validated request body data
+  const {
+    userId,
+    firstName,
+    lastName,
+    email,
+    phoneNumber,
+    address,
+    apartment,
+    street,
+    city,
+    state,
+    cart: cartItems,
+  } = req.body;
   try {
-    // Get user details
-    const user = await schema.fetchOne('users', { id: user_id });
-    if (!user) {
-      return errorResponse(res, { statusCode: 404, message: 'User not found' });
+    // Fetch product details for each cart item
+    const detailedCart = [];
+    for (const item of cartItems) {
+      const product = await schema.fetchOne('products', { id: item.productId });
+      if (!product) {
+        return errorResponse(res, {
+          statusCode: 404,
+          message: `Product not found: ${item.productId}`,
+        });
+      }
+      detailedCart.push({
+        ...item,
+        product,
+      });
     }
-    // Get cart with product details
-    const cart = await schema.fetchData(
-      'cart',
-      { user_id },
-      { populate: [{ field: 'product_id', table: 'products', as: 'product' }] }
-    );
-    if (!cart.length) {
+    if (!detailedCart.length) {
       return errorResponse(res, { statusCode: 400, message: 'Cart is empty' });
     }
     // Compose email content
-    let productList = cart
+    let productList = detailedCart
       .map(
         (item, idx) =>
           `${idx + 1}. ${item.product.name} (Qty: ${item.quantity})\n   Details: ${item.product.details}\n   Price: ${item.product.price || 'N/A'}\n`
       )
       .join('\n');
-    const emailBody = `New Checkout Order\n\nUser Details:\nName: ${user.firstName} ${user.lastName}\nEmail: ${user.email}\n\nCart Items:\n${productList}`;
+    const emailBody = `New Checkout Order\n\nUser Details:\nName: ${firstName} ${lastName}\nEmail: ${email}\nPhone: ${phoneNumber}\nAddress: ${address}, ${apartment ? apartment + ', ' : ''}${street ? street + ', ' : ''}${city}, ${state}\n\nCart Items:\n${productList}`;
 
     // Setup nodemailer
     const transporter = nodemailer.createTransport({
@@ -120,7 +137,7 @@ exports.checkout = async (req, res) => {
       },
     });
     // Send to admin email (from .env or fallback to EMAIL_USER)
-    const adminEmail = process.env.ADMIN_EMAIL || process.env.EMAIL_USER;
+    const adminEmail = process.env.EMAIL_USER;
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: adminEmail,
