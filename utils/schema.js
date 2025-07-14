@@ -1,4 +1,4 @@
-const pool = require("../config/db");
+const pool = require('../config/db');
 
 // Fetch all rows from a table with optional filter (object) and populate option
 async function fetchData(table, filter = {}, options = {}) {
@@ -44,11 +44,11 @@ async function fetchOne(table, filter, options = {}) {
   let sql = `SELECT * FROM \`${table}\``;
   let values = [];
   let whereClauses = [];
-  if (typeof filter === "object" && filter !== null) {
+  if (typeof filter === 'object' && filter !== null) {
     whereClauses = Object.keys(filter).map((key) => `\`${key}\` = ?`);
     values = Object.values(filter);
   } else {
-    whereClauses = ["id = ?"];
+    whereClauses = ['id = ?'];
     values = [filter];
   }
   // Add isDeleted check
@@ -86,36 +86,36 @@ async function create(table, data) {
 async function update(table, filter, data) {
   let sql = `UPDATE \`${table}\` SET ?`;
   let values = [data];
-  if (typeof filter === "object" && filter !== null) {
+  if (typeof filter === 'object' && filter !== null) {
     const where = Object.keys(filter)
       .map((key) => `\`${key}\` = ?`)
-      .join(" AND ");
+      .join(' AND ');
     sql += ` WHERE ${where}`;
     values = [data, ...Object.values(filter)];
   } else {
-    sql += " WHERE id = ?";
+    sql += ' WHERE id = ?';
     values = [data, filter];
   }
+
+  console.log('Update SQL:', sql);
+  console.log('Update values:', values);
+
   const [result] = await pool.query(sql, values);
+  console.log('Update result:', result);
+
   return result.affectedRows > 0;
 }
 
 // Cold delete: set isDeleted = 1 instead of deleting the row
 async function deleteItem(table, id) {
-  const [result] = await pool.query(
-    `UPDATE \`${table}\` SET isDeleted = 1 WHERE id = ?`,
-    [id]
-  );
+  const [result] = await pool.query(`UPDATE \`${table}\` SET isDeleted = 1 WHERE id = ?`, [id]);
   return result.affectedRows > 0;
 }
 
 // Cold delete for multiple items
 async function deleteMultipleItems(table, ids) {
   if (!Array.isArray(ids) || ids.length === 0) return false;
-  const [result] = await pool.query(
-    `UPDATE \`${table}\` SET isDeleted = 1 WHERE id IN (?)`,
-    [ids],
-  );
+  const [result] = await pool.query(`UPDATE \`${table}\` SET isDeleted = 1 WHERE id IN (?)`, [ids]);
   return result.affectedRows > 0;
 }
 

@@ -29,6 +29,11 @@ const forgotPasswordSchema = Joi.object({
   email: Joi.string().email().required(),
 });
 
+const changePasswordSchema = Joi.object({
+  currentPassword: Joi.string().min(5).required(),
+  newPassword: Joi.string().min(5).required(),
+});
+
 const categorySchema = Joi.object({
   name: Joi.string().min(2).max(100).required(),
   description: Joi.string().allow('').required(),
@@ -70,6 +75,7 @@ module.exports = {
   registerSchema,
   loginSchema,
   forgotPasswordSchema,
+  changePasswordSchema,
   categorySchema,
   productSchema,
   updateProductSchema,

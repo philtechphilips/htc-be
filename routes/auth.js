@@ -6,6 +6,7 @@ const {
   registerSchema,
   loginSchema,
   forgotPasswordSchema,
+  changePasswordSchema,
   updateUserSchema,
 } = require('../middleware/authValidation');
 
@@ -165,6 +166,48 @@ router.post('/forgot-password', validate(forgotPasswordSchema), authController.f
 
 /**
  * @swagger
+ * /api/auth/change-password:
+ *   put:
+ *     summary: Change user password
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - currentPassword
+ *               - newPassword
+ *             properties:
+ *               currentPassword:
+ *                 type: string
+ *                 example: oldpassword123
+ *               newPassword:
+ *                 type: string
+ *                 example: newpassword123
+ *     responses:
+ *       200:
+ *         description: Password changed successfully
+ *       400:
+ *         description: Current password is incorrect
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
+const { requireRole } = require('../middleware/role');
+router.put(
+  '/change-password',
+  requireRole(['user', 'admin']),
+  validate(changePasswordSchema),
+  authController.changePassword
+);
+
+/**
+ * @swagger
  * /api/auth/update-profile:
  *   put:
  *     summary: Update user profile (address/contact fields)
@@ -204,7 +247,6 @@ router.post('/forgot-password', validate(forgotPasswordSchema), authController.f
  *       500:
  *         description: Server error
  */
-const { requireRole } = require('../middleware/role');
 router.put(
   '/update-profile',
   requireRole(['user', 'admin']),

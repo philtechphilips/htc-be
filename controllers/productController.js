@@ -263,6 +263,36 @@ exports.deleteCategory = async (req, res) => {
   }
 };
 
+exports.updateCategory = async (req, res) => {
+  const { id } = req.params;
+  const { name, description, image } = req.body;
+
+  try {
+    const category = await schema.fetchOne('categories', { id, isDeleted: 0 });
+    if (!category) {
+      return errorResponse(res, { statusCode: 404, message: 'Category not found' });
+    }
+
+    // Check for duplicate category name (case-insensitive) if name is being updated
+    if (name && name !== category.name) {
+      const existing = await schema.fetchOne('categories', { name: name.trim(), isDeleted: 0 });
+      if (existing && existing.id !== id) {
+        return errorResponse(res, { statusCode: 400, message: 'Category name already exists' });
+      }
+    }
+
+    await schema.update('categories', { id }, { name, description, image });
+
+    return successResponse(res, {
+      statusCode: 200,
+      message: 'Category updated',
+      payload: null,
+    });
+  } catch (err) {
+    return errorResponse(res, { statusCode: 500, message: 'Server error' });
+  }
+};
+
 // Fetch featured products
 exports.getFeaturedProducts = async (req, res) => {
   try {

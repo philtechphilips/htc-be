@@ -129,6 +129,81 @@ exports.forgotPassword = async (req, res) => {
   }
 };
 
+// Change password
+exports.changePassword = async (req, res) => {
+  const user_id = req.user.id;
+  const { currentPassword, newPassword } = req.body;
+
+  try {
+    console.log('Change password request for user:', user_id);
+
+    // Get current user with password
+    const user = await schema.fetchOne('users', { id: user_id });
+    if (!user) {
+      console.log('User not found:', user_id);
+      return errorResponse(res, { statusCode: 404, message: 'User not found' });
+    }
+
+    console.log('User found:', { id: user.id, email: user.email });
+    console.log('Current password hash:', user.password);
+
+    // Verify current password
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) {
+      console.log('Current password verification failed');
+      return errorResponse(res, { statusCode: 400, message: 'Current password is incorrect' });
+    }
+
+    console.log('Current password verified, hashing new password...');
+
+    // Hash new password
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+    console.log('New password hash:', hashedNewPassword);
+
+    console.log('New password hashed, updating database...');
+
+    // Update password in database
+    const updated = await schema.update('users', { id: user_id }, { password: hashedNewPassword });
+    console.log('Database update result:', updated);
+
+    if (!updated) {
+      console.log('Failed to update password in database');
+      return errorResponse(res, { statusCode: 500, message: 'Failed to update password' });
+    }
+
+    // Verify the update by fetching the user again
+    const updatedUser = await schema.fetchOne('users', { id: user_id });
+    console.log('Updated user password hash:', updatedUser.password);
+
+    // Test if the new password works
+    const newPasswordTest = await bcrypt.compare(newPassword, updatedUser.password);
+    console.log('New password test result:', newPasswordTest);
+
+    if (!newPasswordTest) {
+      console.log('New password verification failed after update');
+      return errorResponse(res, {
+        statusCode: 500,
+        message: 'Password update verification failed',
+      });
+    }
+
+    // Test login with new password
+    const loginTest = await bcrypt.compare(newPassword, updatedUser.password);
+    console.log('Login test with new password:', loginTest);
+
+    console.log('Password updated successfully');
+
+    return successResponse(res, {
+      statusCode: 200,
+      message: 'Password changed successfully',
+      payload: null,
+    });
+  } catch (err) {
+    console.error('Change password error:', err);
+    return errorResponse(res, { statusCode: 500, message: 'Server error' });
+  }
+};
+
 // Update user profile (all fields except password)
 exports.updateUser = async (req, res) => {
   const user_id = req.user.id;

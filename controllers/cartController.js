@@ -82,7 +82,7 @@ exports.updateCart = async (req, res) => {
   }
 };
 
-// Checkout: send user and cart details to admin email
+// Checkout: create order and send email notification
 exports.checkout = async (req, res) => {
   // Use validated request body data
   const {
@@ -117,39 +117,10 @@ exports.checkout = async (req, res) => {
     if (!detailedCart.length) {
       return errorResponse(res, { statusCode: 400, message: 'Cart is empty' });
     }
-    // Compose email content
-    let productList = detailedCart
-      .map(
-        (item, idx) =>
-          `${idx + 1}. ${item.product.name} (Qty: ${item.quantity})\n   Details: ${item.product.details}\n   Price: ${item.product.price || 'N/A'}\n`
-      )
-      .join('\n');
-    const emailBody = `New Checkout Order\n\nUser Details:\nName: ${firstName} ${lastName}\nEmail: ${email}\nPhone: ${phoneNumber}\nAddress: ${address}, ${apartment ? apartment + ', ' : ''}${street ? street + ', ' : ''}${city}, ${state}\n\nCart Items:\n${productList}`;
 
-    // Setup nodemailer
-    const transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 465,
-      secure: true,
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-    });
-    // Send to admin email (from .env or fallback to EMAIL_USER)
-    const adminEmail = process.env.EMAIL_USER;
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
-      to: adminEmail,
-      subject: 'New Checkout Order',
-      text: emailBody,
-    };
-    await transporter.sendMail(mailOptions);
-    return successResponse(res, {
-      statusCode: 200,
-      message: 'Checkout successful. Order sent to admin email.',
-      payload: null,
-    });
+    // Call createOrder directly with the real response object
+    const orderController = require('./orderController');
+    await orderController.createOrder(req, res);
   } catch (err) {
     console.error('Checkout error:', err);
     return errorResponse(res, { statusCode: 500, message: 'Server error' });
